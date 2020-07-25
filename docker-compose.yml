@@ -1,0 +1,59 @@
+version: '3.3'
+
+services:
+
+  mysql:
+    build:
+      context: .
+      dockerfile: ./mysql/Dockerfile
+    container_name: mysql
+    ports:
+       - 3306:3306
+    restart: always
+    env_file:
+       - ./.env
+    environment:
+      MYSQL_DATABASE: ${WP_DB_NAME}
+      MYSQL_USER: ${WP_DB_USER}
+      MYSQL_PASSWORD: ${WP_PASS}
+      MYSQL_ROOT_PASSWORD: ${ROOT_PASS}
+    volumes:
+       - datasp:/var/lib/mysql
+    command: '--default-authentication-plugin=mysql_native_password'
+
+
+  php:
+   depends_on:
+       - mysql
+   build:
+     context: .
+     dockerfile: ./containers/Dockerfile
+   container_name: phpfpm
+   env_file: 
+       - ./.env
+   ports:
+       - 9000:9000
+   restart: always
+   volumes:
+       - ./php.ini:/usr/local/etc/php/conf.d/php.ini
+       - ./docker/wp-config.php:/var/www/html/wp-config.php  
+       - wpsp:/var/www/html/wp-content
+       - wordsp1:/var/www/html
+
+  web:
+   depends_on:
+       - mysql
+   build:
+     context: .
+     dockerfile: ./nginx/Dockerfile
+   container_name: web
+   ports:
+       - 80:80
+   volumes:
+       - ./nginx-conf/nginx.conf:/etc/nginx/conf.d/default.conf
+       - wordsp1:/var/www/html
+
+volumes:
+ wordsp1:         
+ datasp:
+ wpsp:
